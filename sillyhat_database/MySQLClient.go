@@ -1,4 +1,4 @@
-package database
+package sillyhat_database
 
 import (
 	"database/sql"
