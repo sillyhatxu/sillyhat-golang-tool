@@ -1,6 +1,7 @@
 package sillyhat_database
 
 import (
+	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
 	"reflect"
 	"strconv"
