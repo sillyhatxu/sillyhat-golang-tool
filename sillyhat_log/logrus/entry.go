@@ -1,4 +1,4 @@
-package logrus
+package sillyhat_logrus
 
 import (
 	"bytes"
@@ -20,6 +20,10 @@ func init() {
 
 // Defines the key when adding errors using WithError.
 var ErrorKey = "error"
+
+type WriteLogProperties struct{
+	URL string
+}
 
 // An entry is the final or intermediate Logrus logging entry. It contains all
 // the fields passed with WithField{,s}. It's finally logged when Debug, Info,
@@ -43,6 +47,12 @@ type Entry struct {
 
 	// When formatter is called in entry.log(), an Buffer may be set to entry
 	Buffer *bytes.Buffer
+
+	// sillyhat customize
+	ModuleName string
+
+	HookType HookType
+	WriteLogProperties WriteLogProperties
 }
 
 func NewEntry(logger *Logger) *Entry {
@@ -50,7 +60,11 @@ func NewEntry(logger *Logger) *Entry {
 		Logger: logger,
 		// Default is five fields, give a little extra room
 		Data: make(Fields, 5),
+		ModuleName: logger.ModuleName,
+		HookType: logger.HookType,
+		WriteLogProperties: logger.WriteLogProperties,
 	}
+
 }
 
 // Returns the string representation from the reader and ultimately the
@@ -83,7 +97,7 @@ func (entry *Entry) WithFields(fields Fields) *Entry {
 	for k, v := range fields {
 		data[k] = v
 	}
-	return &Entry{Logger: entry.Logger, Data: data}
+	return &Entry{Logger: entry.Logger, Data: data,ModuleName:entry.ModuleName,HookType:entry.HookType,WriteLogProperties:entry.WriteLogProperties}
 }
 
 // This function is not declared with a pointer value because otherwise

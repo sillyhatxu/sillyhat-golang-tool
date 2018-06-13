@@ -1,4 +1,4 @@
-package logrus
+package sillyhat_logrus
 
 import (
 	"encoding/json"
@@ -12,9 +12,18 @@ type FieldMap map[fieldKey]string
 
 // Default key names for the default fields
 const (
-	FieldKeyMsg   = "msg"
+	//FieldKeyMsg   = "msg"
+	//FieldKeyLevel = "level"
+	//FieldKeyTime  = "time"
+
+	FieldKeyMsg   = "message"
 	FieldKeyLevel = "level"
-	FieldKeyTime  = "time"
+	FieldKeyTime  = "timestamp"
+
+	FieldKeyModuleName  = "module_name"
+	FieldKeyFile  = "file"
+	FieldKeyLine  = "line"
+	FieldKeyFunc  = "func"
 )
 
 func (f FieldMap) resolve(key fieldKey) string {
@@ -70,6 +79,8 @@ func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 	}
 	data[f.FieldMap.resolve(FieldKeyMsg)] = entry.Message
 	data[f.FieldMap.resolve(FieldKeyLevel)] = entry.Level.String()
+
+	data[f.FieldMap.resolve(FieldKeyModuleName)] = entry.ModuleName
 
 	serialized, err := json.Marshal(data)
 	if err != nil {

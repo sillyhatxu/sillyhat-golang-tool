@@ -1,4 +1,4 @@
-package logrus
+package sillyhat_logrus
 
 import (
 	"fmt"
@@ -62,6 +62,13 @@ var AllLevels = []Level{
 	InfoLevel,
 	DebugLevel,
 }
+
+type HookType uint32
+
+const (
+	Elasticsearch HookType = iota
+	KAFKA
+)
 
 // These are the different logging levels. You can set the logging level to log
 // on your instance of logger, obtained with `logrus.New()`.

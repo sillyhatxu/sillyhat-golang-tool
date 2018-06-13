@@ -7,6 +7,7 @@ import (
 	"log/syslog"
 	"os"
 	"sillyhat-golang-tool/sillyhat_log/logrus"
+	"compress/flate"
 )
 
 // SyslogHook to send logs via syslog.
@@ -24,7 +25,7 @@ func NewSyslogHook(network, raddr string, priority syslog.Priority, tag string) 
 	return &SyslogHook{w, network, raddr}, err
 }
 
-func (hook *SyslogHook) Fire(entry *logrus.Entry) error {
+func (hook *SyslogHook) Fire(entry *sillyhat_logrus.Entry) error {
 	line, err := entry.String()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to read entry, %v", err)
@@ -32,23 +33,44 @@ func (hook *SyslogHook) Fire(entry *logrus.Entry) error {
 	}
 
 	switch entry.Level {
-	case logrus.PanicLevel:
+	case sillyhat_logrus.PanicLevel:
+		write(entry)
 		return hook.Writer.Crit(line)
-	case logrus.FatalLevel:
+	case sillyhat_logrus.FatalLevel:
+		write(entry)
 		return hook.Writer.Crit(line)
-	case logrus.ErrorLevel:
+	case sillyhat_logrus.ErrorLevel:
+		write(entry)
 		return hook.Writer.Err(line)
-	case logrus.WarnLevel:
+	case sillyhat_logrus.WarnLevel:
+		write(entry)
 		return hook.Writer.Warning(line)
-	case logrus.InfoLevel:
+	case sillyhat_logrus.InfoLevel:
+		write(entry)
 		return hook.Writer.Info(line)
-	case logrus.DebugLevel:
+	case sillyhat_logrus.DebugLevel:
+		write(entry)
 		return hook.Writer.Debug(line)
 	default:
 		return nil
 	}
 }
 
-func (hook *SyslogHook) Levels() []logrus.Level {
-	return logrus.AllLevels
+func write(entry *sillyhat_logrus.Entry) {
+	switch entry.HookType {
+	case sillyhat_logrus.Elasticsearch:
+		elasticsearch(entry.WriteLogProperties)
+	case sillyhat_logrus.KAFKA:
+
+	default:
+
+	}
+}
+
+func elasticsearch(writeLogProperties sillyhat_logrus.WriteLogProperties)  {
+
+}
+
+func (hook *SyslogHook) Levels() []sillyhat_logrus.Level {
+	return sillyhat_logrus.AllLevels
 }

@@ -1,4 +1,4 @@
-package logrus
+package sillyhat_logrus
 
 import (
 	"io"
@@ -31,6 +31,11 @@ type Logger struct {
 	mu MutexWrap
 	// Reusable empty entry
 	entryPool sync.Pool
+
+	// sillyhat customize
+	ModuleName string
+	HookType HookType
+	WriteLogProperties WriteLogProperties
 }
 
 type MutexWrap struct {

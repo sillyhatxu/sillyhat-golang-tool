@@ -1,4 +1,4 @@
-package logrus
+package sillyhat_logrus
 
 import (
 	"bufio"

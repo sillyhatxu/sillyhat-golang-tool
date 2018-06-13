@@ -1,6 +1,6 @@
 // +build !appengine,!gopherjs
 
-package logrus
+package sillyhat_logrus
 
 import (
 	"io"

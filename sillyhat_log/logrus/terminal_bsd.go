@@ -1,7 +1,7 @@
 // +build darwin freebsd openbsd netbsd dragonfly
 // +build !appengine,!gopherjs
 
-package logrus
+package sillyhat_logrus
 
 import "golang.org/x/sys/unix"
 
