@@ -2,8 +2,7 @@ package main
 
 import (
 	"sillyhat-golang-tool/sillyhat_log/logrus"
-	//lSyslog "sillyhat-golang-tool/sillyhat_log/logrus/hooks/syslog"
-	//"log/syslog"
+	"runtime"
 )
 
 const (
@@ -17,8 +16,8 @@ const (
 	field_func  = "func"
 )
 
-func main() {
-	log := logrus.New()
+func getLogrusEntry() *logrus.Entry {
+	logNew := logrus.New()
 	jsonFormatter := &logrus.JSONFormatter{
 		FieldMap: logrus.FieldMap{
 			logrus.FieldKeyTime:  field_key_time,
@@ -27,15 +26,38 @@ func main() {
 		},
 		TimestampFormat: format_time,
 	}
-	log.Formatter = jsonFormatter
-	log.Level = logrus.DebugLevel
-	//hook, err := lSyslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+	logNew.Formatter = jsonFormatter
+	logNew.Level = logrus.DebugLevel
 
+	if pc, file, line, ok := runtime.Caller(1); ok {
+		fName := runtime.FuncForPC(pc).Name()
+		return logNew.WithField(field_file, file).WithField(field_line, line).WithField(field_func, fName).WithField(field_module_name,"test-module")
+	}
+	return logNew.WithField(field_module_name,"test-module")
+}
+
+func main() {
+	//logstash-* logstash-2018.04.25
+
+	//log := logrus.New()
+	//jsonFormatter := &logrus.JSONFormatter{
+	//	FieldMap: logrus.FieldMap{
+	//		logrus.FieldKeyTime:  field_key_time,
+	//		logrus.FieldKeyLevel: field_key_level,
+	//		logrus.FieldKeyMsg:   field_key_msg,
+	//	},
+	//	TimestampFormat: format_time,
+	//}
+	//log.Formatter = jsonFormatter
+	//log.Level = logrus.DebugLevel
+	//hook, err := lSyslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+	//
 	//if err == nil {
 	//	log.Hooks.Add(hook)
 	//}
+	//
+	//log.Info(hook)
 
-
-	log.Infof("test %v","haha")
-	log.Infof("test %v","hehe")
+	getLogrusEntry().Infof("test %v","haha")
+	getLogrusEntry().Infof("test %v","hehe")
 }

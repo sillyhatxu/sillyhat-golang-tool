@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/syslog"
 	"os"
-	"github.com/sirupsen/logrus"
+	"sillyhat-golang-tool/sillyhat_log/logrus"
 )
 
 // SyslogHook to send logs via syslog.

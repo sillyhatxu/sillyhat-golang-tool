@@ -146,6 +146,64 @@ func (mysqlClient *MySQLClient) getReflectKind(input interface{},column string) 
 	return reflect.String
 }
 
+//func (mysqlClient *MySQLClient) QueryList(sql string,typ reflect.Type) ([]interface{},error) {
+//	tx,err := mysqlClient.pool.Begin()
+//	if err != nil {
+//		return nil,err
+//	}
+//	defer tx.Commit()
+//	rows,err := tx.Query(sql)
+//	if err != nil {
+//		return nil,err
+//	}
+//	defer rows.Close()
+//
+//	var slice []interface{}
+//
+//	for rows.Next(){
+//		v := reflect.New(typ).Elem()
+//		if err := json.Unmarshal(rows.Scan(&interface{}); err == nil {
+//			slice = append(slice, v.Interface())
+//		}
+//
+//		var id int64
+//		var shop_item_id int64
+//		var size string
+//		if err := rows.Scan(&id,&shop_item_id,&size); err != nil {
+//			log.Fatal(err)
+//		}
+//		shoppingbagArray = append(shoppingbagArray,*&shoppingbagDTO{shop_item_id:shop_item_id,id:id,size:size})
+//	}
+//
+//	for _, hit := range r.Hits.Hits {
+//		v := reflect.New(typ).Elem()
+//		if hit.Source == nil {
+//			slice = append(slice, v.Interface())
+//			continue
+//		}
+//		if err := json.Unmarshal(*hit.Source, v.Addr().Interface()); err == nil {
+//			slice = append(slice, v.Interface())
+//		}
+//	}
+//	return slice
+//}
+
+
+func (mysqlClient *MySQLClient) QueryList(sql string) (*sql.Rows,error) {
+	tx,err := mysqlClient.pool.Begin()
+	if err != nil {
+		return nil,err
+	}
+	defer tx.Commit()
+	rows,err := tx.Query(sql)
+	if err != nil {
+		return nil,err
+	}
+	defer rows.Close()
+	return rows,nil
+}
+
+
 func (mysqlClient *MySQLClient) Query(sql string,input interface{}) ([] map[string]interface{},error) {
 	tx,err := mysqlClient.pool.Begin()
 	if err != nil {
