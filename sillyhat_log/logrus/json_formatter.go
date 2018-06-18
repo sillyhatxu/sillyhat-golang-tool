@@ -3,6 +3,7 @@ package sillyhat_logrus
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type fieldKey string
@@ -18,7 +19,8 @@ const (
 
 	FieldKeyMsg   = "message"
 	FieldKeyLevel = "level"
-	FieldKeyTime  = "timestamp"
+	FieldKeyTime  = "time"
+	FieldKeyTimestamp  = "@timestamp"
 
 	FieldKeyModuleName  = "module_name"
 	FieldKeyFile  = "file"
@@ -81,6 +83,13 @@ func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 	data[f.FieldMap.resolve(FieldKeyLevel)] = entry.Level.String()
 
 	data[f.FieldMap.resolve(FieldKeyModuleName)] = entry.ModuleName
+	switch entry.HookType {
+	case Elasticsearch:
+		//data[f.FieldMap.resolve(FieldKeyTimestamp)] = time.Now().Unix()
+		data[f.FieldMap.resolve(FieldKeyTimestamp)] = time.Now()
+	default:
+
+	}
 
 	serialized, err := json.Marshal(data)
 	if err != nil {

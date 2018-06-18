@@ -37,6 +37,11 @@ func init() {
 	log.SetModuleName("test-module")
 	log.SetHookType(log.Elasticsearch)
 	log.SetWriteLogProperties(log.WriteLogProperties{URL:"http://172.28.2.25:9200"})
+	hook, err := hookSyslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+	if err != nil {
+		panic(err)
+	}
+	log.AddHook(hook)
 }
 
 func main() {
@@ -54,12 +59,11 @@ func main() {
 	//log.Formatter = jsonFormatter
 	//log.Level = sillyhat_logrus.DebugLevel
 
-
-	hook, err := hookSyslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
-	if err != nil {
-		panic(err)
-	}
-	log.AddHook(hook)
 	log.Infof("test %v","haha")
-	log.Infof("test %v","hehe")
+	log.Infof("test %v","12314")
+	log.Infof("test %v","34623464")
+	log.Infof("test %v","hedfgsdfghdhe")
+	log.Infof("test %v","45734")
+	log.Infof("test %v","asgasgasg")
+	log.Infof("test %v","he357457428dvbxcvbhe")
 }

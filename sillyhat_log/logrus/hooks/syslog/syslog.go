@@ -7,7 +7,8 @@ import (
 	"log/syslog"
 	"os"
 	"sillyhat-golang-tool/sillyhat_log/logrus"
-	"compress/flate"
+	elastic "sillyhat-golang-tool/sillyhat_elasticsearch"
+	"time"
 )
 
 // SyslogHook to send logs via syslog.
@@ -34,32 +35,32 @@ func (hook *SyslogHook) Fire(entry *sillyhat_logrus.Entry) error {
 
 	switch entry.Level {
 	case sillyhat_logrus.PanicLevel:
-		write(entry)
+		write(entry,line)
 		return hook.Writer.Crit(line)
 	case sillyhat_logrus.FatalLevel:
-		write(entry)
+		write(entry,line)
 		return hook.Writer.Crit(line)
 	case sillyhat_logrus.ErrorLevel:
-		write(entry)
+		write(entry,line)
 		return hook.Writer.Err(line)
 	case sillyhat_logrus.WarnLevel:
-		write(entry)
+		write(entry,line)
 		return hook.Writer.Warning(line)
 	case sillyhat_logrus.InfoLevel:
-		write(entry)
+		write(entry,line)
 		return hook.Writer.Info(line)
 	case sillyhat_logrus.DebugLevel:
-		write(entry)
+		write(entry,line)
 		return hook.Writer.Debug(line)
 	default:
 		return nil
 	}
 }
 
-func write(entry *sillyhat_logrus.Entry) {
+func write(entry *sillyhat_logrus.Entry,line string) {
 	switch entry.HookType {
 	case sillyhat_logrus.Elasticsearch:
-		elasticsearch(entry.WriteLogProperties)
+		elasticsearch(entry.WriteLogProperties,line)
 	case sillyhat_logrus.KAFKA:
 
 	default:
@@ -67,8 +68,19 @@ func write(entry *sillyhat_logrus.Entry) {
 	}
 }
 
-func elasticsearch(writeLogProperties sillyhat_logrus.WriteLogProperties)  {
+const (
+	elastic_type = "gostash"
+)
 
+func getElasticsearchIndex() string {
+	return "gostash-" + time.Now().Format("2006.01.02")
+}
+
+func elasticsearch(writeLogProperties sillyhat_logrus.WriteLogProperties,line string)  {
+	elastic.SetURL(writeLogProperties.URL)
+	elastic.SetIndex(getElasticsearchIndex())
+	elastic.SetType(elastic_type)
+	elastic.Index(line)
 }
 
 func (hook *SyslogHook) Levels() []sillyhat_logrus.Level {

@@ -1,1 +1,0 @@
-package sillyhat_elasticsearch
