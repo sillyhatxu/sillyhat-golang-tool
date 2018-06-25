@@ -4,24 +4,21 @@ import (
 	"sync"
 	"context"
 	"github.com/olivere/elastic"
-	"fmt"
 )
-
-
 
 type Client struct {
 
-	url string
+	URL string
 
-	elasticType string
+	ElasticType string
 
-	elasticIndex string
+	ElasticIndex string
 
-	ctx context.Context
+	CTX context.Context
 
-	mu MutexWrap
+	MU MutexWrap
 
-	clientPool sync.Pool
+	ClientPool sync.Pool
 }
 
 type MutexWrap struct {
@@ -30,11 +27,10 @@ type MutexWrap struct {
 }
 
 func (client *Client) newElastic() (*ElasticEntry,error) {
-	elasticEntry, ok := client.clientPool.Get().(*ElasticEntry)
+	elasticEntry, ok := client.ClientPool.Get().(*ElasticEntry)
 	if ok {
 		return elasticEntry,nil
 	}
-	fmt.Println("new elastic entry")
 	return NewElastic(client)
 }
 
@@ -52,20 +48,30 @@ func (mw *MutexWrap) Unlock() {
 
 func New() *Client {
 	return &Client{
-		ctx:context.Background(),
+		CTX:context.Background(),
 	}
 }
 
 func (client *Client) releaseEntry(elasticEntry *ElasticEntry) {
-	client.clientPool.Put(elasticEntry)
+	client.ClientPool.Put(elasticEntry)
 }
 
-func (client *Client) Exists() (bool,error) {
-	return elasticClient.Exists()
+func (client *Client) IndexExists() (bool,error) {
+	elasticEntry,err := client.newElastic()
+	if err != nil{
+		return false,err
+	}
+	client.releaseEntry(elasticEntry)
+	return elasticEntry.IndexExists()
 }
 
 func (client *Client) CreateIndex() (bool,error) {
-	return elasticClient.CreateIndex()
+	elasticEntry,err := client.newElastic()
+	if err != nil{
+		return false,err
+	}
+	client.releaseEntry(elasticEntry)
+	return elasticEntry.CreateIndex()
 }
 
 func (client *Client) Index(msg string) (*elastic.IndexResponse,error) {
@@ -77,13 +83,22 @@ func (client *Client) Index(msg string) (*elastic.IndexResponse,error) {
 	return elasticEntry.Index(msg)
 }
 
-func (client *Client) Bulk(docArray [] interface{},idDeleteArray [] string) (*elastic.BulkResponse, error) {
+func (client *Client) Bulk(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
 	elasticEntry,err := client.newElastic()
 	if err != nil{
 		return nil,err
 	}
 	client.releaseEntry(elasticEntry)
-	return elasticEntry.Bulk(docArray,idDeleteArray)
+	return elasticEntry.Bulk(bulkEntityArray)
+}
+
+func (client *Client) BulkAll(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
+	elasticEntry,err := client.newElastic()
+	if err != nil{
+		return nil,err
+	}
+	client.releaseEntry(elasticEntry)
+	return elasticEntry.BulkAll(bulkEntityArray)
 }
 
 func (client *Client) Update(id string,doc interface{}) (*elastic.UpdateResponse, error) {

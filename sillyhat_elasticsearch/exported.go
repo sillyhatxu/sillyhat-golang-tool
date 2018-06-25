@@ -8,29 +8,33 @@ var (
 )
 
 func SetURL(url string) {
-	elasticClient.mu.Lock()
-	defer elasticClient.mu.Unlock()
-	elasticClient.url = url
+	elasticClient.MU.Lock()
+	defer elasticClient.MU.Unlock()
+	elasticClient.URL = url
 }
 
 func SetType(elasticType string) {
-	elasticClient.mu.Lock()
-	defer elasticClient.mu.Unlock()
-	elasticClient.elasticType = elasticType
+	elasticClient.MU.Lock()
+	defer elasticClient.MU.Unlock()
+	elasticClient.ElasticType = elasticType
 }
 
 func SetIndex(elasticIndex string) {
-	elasticClient.mu.Lock()
-	defer elasticClient.mu.Unlock()
-	elasticClient.elasticIndex = elasticIndex
+	elasticClient.MU.Lock()
+	defer elasticClient.MU.Unlock()
+	elasticClient.ElasticIndex = elasticIndex
 }
 
-func Bulk(docArray [] interface{},idDeleteArray [] string) (*elastic.BulkResponse, error) {
-	return elasticClient.Bulk(docArray,idDeleteArray)
+func Bulk(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
+	return elasticClient.Bulk(bulkEntityArray)
 }
 
-func Exists() (bool,error) {
-	return elasticClient.Exists()
+func BulkAll(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
+	return elasticClient.BulkAll(bulkEntityArray)
+}
+
+func IndexExists() (bool,error) {
+	return elasticClient.IndexExists()
 }
 
 func CreateIndex() (bool,error) {

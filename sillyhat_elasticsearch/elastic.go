@@ -33,14 +33,29 @@ type ElasticEntry struct {
 
 }
 
-type BulkableDoc interface {
-	Source() ([]string, error)
+type BulkEntity struct {
+
+	Id string
+
+	Data interface{}
+
+	IsDelete bool
+
+}
+type BulkDoc interface {
+
+	InsertArray() [] interface{}
+
+	UpdateArray() [] interface{}
+
+	DeleteArray() [] string
+
 }
 
 
 func NewElastic(client *Client) (*ElasticEntry,error) {
 	elasticClient, err := elastic.NewClient(
-		elastic.SetURL(client.url),
+		elastic.SetURL(client.URL),
 		elastic.SetSniff(false),
 		elastic.SetHealthcheckInterval(10*time.Second),
 		elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),
@@ -50,15 +65,23 @@ func NewElastic(client *Client) (*ElasticEntry,error) {
 		return nil,err
 	}
 	return &ElasticEntry{
-		ctx:client.ctx,
+		ctx:client.CTX,
 		elasticClient:elasticClient,
-		elasticType:client.elasticType,
-		elasticIndex:client.elasticIndex,
+		elasticType:client.ElasticType,
+		elasticIndex:client.ElasticIndex,
 	},nil
 }
 
-func (elasticEntry ElasticEntry) Exists() (bool,error) {
+func (elasticEntry ElasticEntry) IndexExists() (bool,error) {
 	exists, err := elasticEntry.elasticClient.IndexExists(elasticEntry.elasticIndex).Do(elasticEntry.ctx)
+	if err != nil {
+		return false,err
+	}
+	return exists,nil
+}
+
+func (elasticEntry ElasticEntry) DataExists(id string) (bool,error) {
+	exists, err := elasticEntry.elasticClient.Exists().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(id).Do(elasticEntry.ctx)
 	if err != nil {
 		return false,err
 	}
@@ -77,7 +100,7 @@ func (elasticEntry ElasticEntry) CreateIndex() (bool,error) {
 }
 
 func (elasticEntry ElasticEntry) Index(json string) (*elastic.IndexResponse,error) {
-	exists,err := elasticEntry.Exists()
+	exists,err := elasticEntry.IndexExists()
 	if err != nil {
 		return nil,err
 	}
@@ -94,20 +117,47 @@ func (elasticEntry ElasticEntry) Index(json string) (*elastic.IndexResponse,erro
 	return index,nil
 }
 
-func (elasticEntry ElasticEntry) Bulk(docArray [] interface{},idDeleteArray [] string) (*elastic.BulkResponse, error) {
+func (elasticEntry ElasticEntry) BulkAll(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
 	bulk := elasticEntry.elasticClient.Bulk()
-	for _,doc := range docArray{
-		request := elastic.NewBulkIndexRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Doc(doc)
+	for _,bulkEntity := range bulkEntityArray{
+		request := elastic.NewBulkIndexRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id).Doc(bulkEntity.Data)
 		bulk.Add(request)
 	}
-	//for _,doc := range docUpdateArray{
-	//	request := elastic.NewBulkUpdateRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Doc(doc)
-	//	bulk.Add(request)
-	//}
-	for _,id := range idDeleteArray{
-		request := elastic.NewBulkDeleteRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(id)
-		bulk.Add(request)
+	bulkResponse, err := bulk.Do(elasticEntry.ctx)
+	if err != nil {
+		return nil,err
 	}
+	return bulkResponse,nil
+}
+
+func (elasticEntry ElasticEntry) Bulk(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
+	bulk := elasticEntry.elasticClient.Bulk()
+	for _,bulkEntity := range bulkEntityArray{
+		if bulkEntity.IsDelete{
+			exists,err := elasticEntry.DataExists(bulkEntity.Id)
+			if err != nil{
+				log.Println(err.Error())
+			}
+			if exists{
+				request := elastic.NewBulkDeleteRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id)
+				bulk.Add(request)
+			}
+		}else{
+			exists,err := elasticEntry.DataExists(bulkEntity.Id)
+			if err != nil{
+				log.Println(err.Error())
+			}
+			if exists{
+				request := elastic.NewBulkUpdateRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id).Doc(bulkEntity.Data)
+				bulk.Add(request)
+			}else{
+				request := elastic.NewBulkIndexRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id).Doc(bulkEntity.Data)
+				bulk.Add(request)
+			}
+		}
+	}
+
+
 	bulkResponse, err := bulk.Do(elasticEntry.ctx)
 	if err != nil {
 		return nil,err

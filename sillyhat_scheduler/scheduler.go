@@ -3,7 +3,7 @@ package sillyhat_scheduler
 import (
 	"reflect"
 	"time"
-	"golang-cloud/tool/log"
+	log "sillyhat-golang-tool/sillyhat_log/logrus"
 )
 
 //jobFunc : func(){}
@@ -20,10 +20,10 @@ import (
 func InitialScheduler(jobFunc interface{}, start, interval string, jobArgs ...interface{}) {
 	jobValue := reflect.ValueOf(jobFunc)
 	if jobValue.Kind() != reflect.Func {
-		log.Log().Panic("only function can be schedule.")
+		log.Panic("only function can be schedule.")
 	}
 	if len(jobArgs) != jobValue.Type().NumIn() {
-		log.Log().Panic("The number of args valid.")
+		log.Panic("The number of args valid.")
 	}
 	// Get job function args.
 	in := make([]reflect.Value, len(jobArgs))
@@ -34,16 +34,16 @@ func InitialScheduler(jobFunc interface{}, start, interval string, jobArgs ...in
 	// Get interval d.
 	d, err := time.ParseDuration(interval)
 	if err != nil {
-		log.Log().Panic(err)
+		log.Panic(err)
 	}
 	//location, err := time.LoadLocation("Asia/Shanghai")
 	location, err := time.LoadLocation("Local")
 	if err != nil {
-		log.Log().Panic(err)
+		log.Panic(err)
 	}
 	t, err := time.ParseInLocation("15:04:05", start, location)
 	if err != nil {
-		log.Log().Panic(err)
+		log.Panic(err)
 	}
 	now := time.Now()
 

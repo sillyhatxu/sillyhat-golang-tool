@@ -27,24 +27,40 @@ type MySQLClient struct {
 	pool    *sql.DB
 }
 
-func (mysqlClient *MySQLClient) Init() (err error) {
-	mysqlClient.pool,err = sql.Open("mysql", mysqlClient.DataSourceName)
+func NewClient(dataSourceName string) (*MySQLClient,error) {
+	mysqlClientPool,err := sql.Open("mysql", dataSourceName)
 	if err != nil{
-		panic(err)
-	}
-	if err != nil {
-		return err
+		return nil,err
 	}
 	//使用前 Ping, 确保 DB 连接正常
-	err = mysqlClient.pool.Ping()
+	err = mysqlClientPool.Ping()
 	if err != nil {
-		return err
+		return nil,err
 	}
 	//mysqlClient.pool.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
-	mysqlClient.pool.SetMaxIdleConns(maxIdleConns)
-	mysqlClient.pool.SetMaxOpenConns(maxOpenConns)
-	return nil
+	mysqlClientPool.SetMaxIdleConns(maxIdleConns)
+	mysqlClientPool.SetMaxOpenConns(maxOpenConns)
+	return &MySQLClient{DataSourceName:dataSourceName,pool:mysqlClientPool},nil
 }
+
+//func (mysqlClient *MySQLClient) Init() (err error) {
+//	mysqlClient.pool,err = sql.Open("mysql", mysqlClient.DataSourceName)
+//	if err != nil{
+//		panic(err)
+//	}
+//	if err != nil {
+//		return err
+//	}
+//	//使用前 Ping, 确保 DB 连接正常
+//	err = mysqlClient.pool.Ping()
+//	if err != nil {
+//		return err
+//	}
+//	//mysqlClient.pool.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
+//	mysqlClient.pool.SetMaxIdleConns(maxIdleConns)
+//	mysqlClient.pool.SetMaxOpenConns(maxOpenConns)
+//	return nil
+//}
 
 func (mysqlClient *MySQLClient) GetConnection() *sql.DB {
 	return mysqlClient.pool
