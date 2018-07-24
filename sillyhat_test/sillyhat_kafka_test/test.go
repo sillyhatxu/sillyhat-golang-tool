@@ -91,7 +91,6 @@ func commit(){
 		log.Printf("Failed open consumer: %v", err)
 		return
 	}
-
 	defer cu.Close()
 
 	go func() {
@@ -119,8 +118,6 @@ func commit(){
 	cu.CommitOffsets()
 
 	log.Println("commit")
-
-
 }
 
 //subscriptionsOf(cs).Should(Equal(map[string][]int32{
@@ -137,22 +134,23 @@ func testBatchConsumer()  {
 	groupID := "ocb-syncer-11"
 	nodeList := "172.28.2.22:9092,172.28.2.22:9091,172.28.2.22:9090"
 	topicList := "DataRefreshed"
-	config := sillyhat_kafka.NewKafkaConsumerConfig(60 * time.Second,10000)
+	config := sillyhat_kafka.NewKafkaConsumerConfig(5 * time.Second,100000000)
 	client,err := sillyhat_kafka.NewKafkaClient(groupID,nodeList,topicList,config)
 	if err != nil{
 		log.Println(err)
 		return
 	}
 	eventArray,err := client.BatchConsumer()
-	for _,event := range eventArray{
-		log.Println(event)
-	}
+	log.Println(len(eventArray))
+	//for _,event := range eventArray{
+	//	log.Println(event)
+	//}
 
 }
 func main() {
-	get()
+	//get()
 	//commit()
-	//testBatchConsumer()
+	testBatchConsumer()
 	//done := make(chan os.Signal, 1)
 	//signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	//<-done

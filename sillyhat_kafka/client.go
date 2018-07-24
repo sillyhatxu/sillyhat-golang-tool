@@ -6,27 +6,17 @@ import (
 	"github.com/bsm/sarama-cluster"
 	"github.com/Shopify/sarama"
 	"strings"
-	"encoding/json"
 )
 
-//type ConsumerBatchCallback func(eventArray []EventDTO) error
+type ConsumerDTO struct {
+	Key, Value     []byte
 
-type EventDTO struct {
+	Topic string `json:"topic"`
 
-	EventName string `json:"eventName"`
+	Partition int32 `json:"partition"`
 
-	EventBody string `json:"eventBody"`
+	Offset int64 `json:"offset"`
 
-	EventTimestamp int64 `json:"eventTimestamp"`
-}
-
-type CommandDTO struct {
-
-	CommandName string `json:"commandName"`
-
-	CommandBody string `json:"commandBody"`
-
-	CommandTimestamp int64 `json:"commandTimestamp"`
 }
 
 type consumerConfig struct {
@@ -45,8 +35,6 @@ type kafkaClient struct {
 	kafkaTopicList string
 
 	consumerConfig *consumerConfig
-
-	consumerClient *cluster.Consumer
 }
 
 
@@ -56,66 +44,89 @@ func NewKafkaConsumerConfig(maxWaitTime time.Duration,maxEvent int) *consumerCon
 
 
 func NewKafkaClient(kafkaGroupId string,kafkaNodeList string,kafkaTopicList string,consumerConfig *consumerConfig) (*kafkaClient,error) {
-	config := cluster.NewConfig()
-	config.Consumer.Return.Errors = true
-	config.Group.Return.Notifications = true
-	config.Consumer.Offsets.CommitInterval = 1 * time.Second
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest
-	c, err := cluster.NewConsumer(strings.Split(kafkaNodeList, ","), kafkaGroupId, strings.Split(kafkaTopicList, ","), config)
-	if err != nil {
-		log.Printf("Failed open consumer: %v", err)
-		return nil,err
-	}
-	defer c.Close()
+	log.Info("NewKafkaClient [ kafkaGroupId :",kafkaGroupId,"; kafkaNodeList : ",kafkaNodeList,"; kafkaTopicList : ",kafkaTopicList,"]")
 	return &kafkaClient{
 		kafkaGroupId:kafkaGroupId,
 		kafkaNodeList:kafkaNodeList,
 		kafkaTopicList:kafkaTopicList,
 		consumerConfig:consumerConfig,
-		consumerClient:c,
 	},nil
 }
 
-func (client kafkaClient) BatchConsumer() ([]EventDTO,error){
+func (client kafkaClient) getKafkaClient() (*cluster.Consumer,error) {
+	config := cluster.NewConfig()
+	config.Consumer.Return.Errors = true
+	config.Group.Return.Notifications = true
+	config.Consumer.Offsets.CommitInterval = 1 * time.Second
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+	//config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	c, err := cluster.NewConsumer(strings.Split(client.kafkaNodeList, ","), client.kafkaGroupId, strings.Split(client.kafkaTopicList, ","), config)
+	if err != nil {
+		log.Printf("Failed open consumer: %v", err)
+		return nil,err
+	}
+
 	go func() {
-		for err := range client.consumerClient.Errors() {
+		for err := range c.Errors() {
 			log.Info("Error: %s\n", err.Error())
 		}
 		log.Info("client.consumerClient.Errors end")
 	}()
 
 	go func() {
-		for note := range client.consumerClient.Notifications() {
+		for note := range c.Notifications() {
 			log.Info("Rebalanced-------------: %v \n", note)
 		}
-		log.Info("client.consumerClient.ErNotificationsrors end")
+		log.Info("client.consumerClient.Notificationsrors end")
 	}()
+	return c,nil
+}
 
-	var eventArray []EventDTO
+
+func (client kafkaClient) BatchConsumer() ([]ConsumerDTO,error){
+	c,err := client.getKafkaClient()
+	if err != nil{
+		return nil,err
+	}
+	defer c.Close()
+
+	var consumerArray []ConsumerDTO
 
 	var endTime <- chan time.Time
 	endTime = time.After(client.consumerConfig.maxWaitTime)
 
 	for {
 		select {
-		case msg, ok := <- client.consumerClient.Messages():
+		case msg, ok := <- c.Messages():
 			if ok {
-				//log.Debugf("Partition:%d, Offset:%d, Key:%s, Value:%s", msg.Partition, msg.Offset, string(msg.Key), string(msg.Value))
-				log.Infof("Partition:%d, Offset:%d, Key:%s, Value:%s", msg.Partition, msg.Offset, string(msg.Key), string(msg.Value))
-				var eventDTO EventDTO
-				json.Unmarshal([]byte(string(msg.Value)), &eventDTO)
-				eventArray = append(eventArray,eventDTO)
-				if len(eventArray) >= client.consumerConfig.maxEvent{
+				log.Debugf("Partition:%d, Offset:%d, Key:%s, Value:%s", msg.Partition, msg.Offset, string(msg.Key), string(msg.Value))
+				//log.Infof("Partition:%d, Offset:%d, Key:%s, Value:%s", msg.Partition, msg.Offset, string(msg.Key), string(msg.Value))
+				consumerArray = append(consumerArray,*&ConsumerDTO{Key:msg.Key,Value:msg.Value,Partition:msg.Partition,Offset:msg.Offset,Topic:msg.Topic})
+				if len(consumerArray) >= client.consumerConfig.maxEvent{
+					log.Println("Consumer max event:",len(consumerArray))
 					goto Loop
 				}
 			}
 		case <-endTime:
-			log.Println("Consumer timeout,return event length ",len(eventArray))
+			log.Println("Consumer timeout,return length ",len(consumerArray))
 			goto Loop
 		}
 	}
 	Loop:
 	log.Info("BatchConsumer end")
-	return eventArray,nil
+	return consumerArray,nil
+}
 
+func (client kafkaClient) BatchCommit(consumerArray []ConsumerDTO) (error){
+	c,err := client.getKafkaClient()
+	if err != nil{
+		return err
+	}
+	defer c.Close()
+	time.Sleep(10*time.Second)
+	for _,consumerDTO := range consumerArray{
+		c.MarkPartitionOffset(consumerDTO.Topic,consumerDTO.Partition,consumerDTO.Offset,"")
+	}
+	c.CommitOffsets()
+	return nil
 }
