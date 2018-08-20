@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"fmt"
 	"net"
+	bytes "bytes"
 )
 
 const(
@@ -54,6 +55,13 @@ func acceptLoop(l net.Listener) {
 func (c ConsulServer) RegisterServer() {
 	log.Info("ConsulServer : ",c.String())
 	healthAPI :="/health"
+	c.Router.GET(healthAPI, func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"Description":"Golang project client status",
+			"Status":"UP",
+		})
+	})
+
 	config := consulapi.DefaultConfig()
 	config.Address = c.ConsulAddress
 
@@ -114,11 +122,15 @@ func (c ConsulServer) RegisterServer() {
 	}else{
 		http = fmt.Sprintf("http://%s:%d%s", registration.Address, c.Port, healthAPI)
 	}
+
+	healthURL := fmt.Sprintf("%v:%v/%v", c.LocalIP, c.Port, c.Name)
+	log.Info("http : ",http)
+	log.Info("healthURL : ",healthURL)
 	registration.Check = &consulapi.AgentServiceCheck{
 		HTTP:                           http,
 		Timeout:                        timeout,
 		Interval:                       interval,			//健康检查间隔
-		GRPC:							fmt.Sprintf("%v:%v/%v", c.LocalIP, c.Port, c.Name),// grpc 支持，执行健康检查的地址，service 会传到 Health.Check 函数中
+		GRPC:							healthURL,// grpc 支持，执行健康检查的地址，service 会传到 Health.Check 函数中
 		DeregisterCriticalServiceAfter: deregister_critical_service_after, //注销时间，相当于过期时间,check失败后30秒删除本服务
 		//DeregisterCriticalServiceAfter: time.Duration(1) * time.Minute,
 		//Interval:                       time.Duration(10) * time.Second,
@@ -130,14 +142,6 @@ func (c ConsulServer) RegisterServer() {
 	if err := client.Agent().ServiceRegister(registration); err != nil {
 		log.Panic("register server error : ", err)
 	}
-
-	c.Router.GET(healthAPI, func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"Description":"Golang project client status",
-			"Status":"UP",
-		})
-	})
-
 }
 
 func localIP() string {
@@ -148,9 +152,63 @@ func localIP() string {
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
+				if IpBetween(net.ParseIP("10.0.0.0"), net.ParseIP("10.0.0.255"),ipnet.IP){
+					return ipnet.IP.String()
+				}
+			}
+		}
+	}
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				if IsLocakIP(ipnet.IP){
+					return ipnet.IP.String()
+				}
+			}
+		}
+	}
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
 				return ipnet.IP.String()
 			}
 		}
 	}
 	return ""
+}
+
+func IpBetween(from net.IP, to net.IP, test net.IP) bool {
+	if from == nil || to == nil || test == nil {
+		fmt.Println("An ip input is nil") // or return an error!?
+		return false
+	}
+	from16 := from.To16()
+	to16 := to.To16()
+	test16 := test.To16()
+	if from16 == nil || to16 == nil || test16 == nil {
+		fmt.Println("An ip did not convert to a 16 byte") // or return an error!?
+		return false
+	}
+
+	if bytes.Compare(test16, from16) >= 0 && bytes.Compare(test16, to16) <= 0 {
+		return true
+	}
+	return false
+}
+
+func IsLocakIP(check net.IP) bool {
+	//tcp/ip协议中，专门保留了三个IP地址区域作为私有地址，其地址范围如下：
+	//10.0.0.0/8：10.0.0.0～10.255.255.255
+	//172.16.0.0/12：172.16.0.0～172.31.255.255
+	//192.168.0.0/16：192.168.0.0～192.168.255.255
+	if IpBetween(net.ParseIP("10.0.0.0"), net.ParseIP("10.255.255.255"),check) {
+		return true
+	}
+	if IpBetween(net.ParseIP("172.16.0.0"), net.ParseIP("172.31.255.255"),check) {
+		return true
+	}
+	if IpBetween(net.ParseIP("192.168.0.0"), net.ParseIP("192.168.255.255"),check) {
+		return true
+	}
+	return false;
 }

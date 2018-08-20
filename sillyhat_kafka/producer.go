@@ -26,6 +26,9 @@ func NewKafkaProducerClient(address,topics string) *Producer {
 }
 
 func (p Producer) Send(commandName,commandBody string) error {
+	log.Info("kafka producer")
+	log.Info("commandName :",commandName)
+	log.Info("commandBody :",commandBody)
 	commandDTO := command.NewCommandDTO(commandName,commandBody)
 	commandByte, err := json.Marshal(commandDTO)
 	if err != nil {

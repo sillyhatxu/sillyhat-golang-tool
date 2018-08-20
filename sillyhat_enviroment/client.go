@@ -40,13 +40,14 @@ func InitialEnviromentConfig(enviromentName,moduleName,dbPath string,fileMode os
 }
 
 func Get(key string) string {
-	log.Info("sillyhatEnviromentClient : ",sillyhatEnviromentClient.String())
+	log.Info("sillyhat_enviroment.get("+key+")")
 	boltClient := sillyhat_bolt.NewBoltClient(sillyhatEnviromentClient.dbPath,sillyhatEnviromentClient.fileMode)
 	result,err := boltClient.Get(enviroment_root,key)
 	if err != nil{
 		log.Error(err.Error())
 		return ""
 	}
+	log.Info("sillyhat_enviroment.get("+key+");result:",result)
 	return result
 }
 
