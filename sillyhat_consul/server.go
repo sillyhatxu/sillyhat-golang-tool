@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"fmt"
 	"net"
-	bytes "bytes"
+	"bytes"
 )
 
 const(
@@ -179,14 +179,14 @@ func localIP() string {
 
 func IpBetween(from net.IP, to net.IP, test net.IP) bool {
 	if from == nil || to == nil || test == nil {
-		fmt.Println("An ip input is nil") // or return an error!?
+		log.Info("An ip input is nil") // or return an error!?
 		return false
 	}
 	from16 := from.To16()
 	to16 := to.To16()
 	test16 := test.To16()
 	if from16 == nil || to16 == nil || test16 == nil {
-		fmt.Println("An ip did not convert to a 16 byte") // or return an error!?
+		log.Info("An ip did not convert to a 16 byte") // or return an error!?
 		return false
 	}
 
