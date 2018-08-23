@@ -53,6 +53,10 @@ func Get(id string) (*elastic.GetResult, error) {
 	return elasticClient.Get(id)
 }
 
+func MultiGet(idArray [] string) (*elastic.MgetResponse, error) {
+	return elasticClient.MultiGet(idArray)
+}
+
 func Delete(id string) (int64, error){
 	return elasticClient.Delete(id)
 }

@@ -88,6 +88,18 @@ func (elasticEntry ElasticEntry) DataExists(id string) (bool,error) {
 	return exists,nil
 }
 
+func (elasticEntry ElasticEntry) MultiGet(idArray []string) (*elastic.MgetResponse, error) {
+	mgetService := elasticEntry.elasticClient.MultiGet()
+	for _,id := range idArray{
+		mgetService = mgetService.Add(elastic.NewMultiGetItem().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(id))
+	}
+	response,err := mgetService.Do(elasticEntry.ctx)
+	if err != nil {
+		return nil,err
+	}
+	return response,nil
+}
+
 func (elasticEntry ElasticEntry) CreateIndex() (bool,error) {
 	index, err := elasticEntry.elasticClient.CreateIndex(elasticEntry.elasticIndex).Do(elasticEntry.ctx)
 	if err != nil {
@@ -130,34 +142,41 @@ func (elasticEntry ElasticEntry) BulkAll(bulkEntityArray []BulkEntity) (*elastic
 	return bulkResponse,nil
 }
 
+func checkExists(resultArray []*elastic.GetResult,id string) bool {
+	for _,result := range resultArray{
+		if result.Id == id{
+			return result.Found
+		}
+	}
+	return false
+}
+
 func (elasticEntry ElasticEntry) Bulk(bulkEntityArray []BulkEntity) (*elastic.BulkResponse, error) {
 	bulk := elasticEntry.elasticClient.Bulk()
+	mgetService := elasticEntry.elasticClient.MultiGet()
 	for _,bulkEntity := range bulkEntityArray{
-		if bulkEntity.IsDelete{
-			exists,err := elasticEntry.DataExists(bulkEntity.Id)
-			if err != nil{
-				log.Println(err.Error())
-			}
-			if exists{
+		mgetService = mgetService.Add(elastic.NewMultiGetItem().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id))
+	}
+	response,err := mgetService.Do(elasticEntry.ctx)
+	if err != nil {
+		return nil,err
+	}
+	for _,bulkEntity := range bulkEntityArray{
+		if checkExists(response.Docs,bulkEntity.Id){
+			if bulkEntity.IsDelete{
 				request := elastic.NewBulkDeleteRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id)
+				bulk.Add(request)
+			}else{
+				request := elastic.NewBulkUpdateRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id).Doc(bulkEntity.Data)
 				bulk.Add(request)
 			}
 		}else{
-			exists,err := elasticEntry.DataExists(bulkEntity.Id)
-			if err != nil{
-				log.Println(err.Error())
-			}
-			if exists{
-				request := elastic.NewBulkUpdateRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id).Doc(bulkEntity.Data)
-				bulk.Add(request)
-			}else{
+			if !bulkEntity.IsDelete{
 				request := elastic.NewBulkIndexRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id).Doc(bulkEntity.Data)
 				bulk.Add(request)
 			}
 		}
 	}
-
-
 	bulkResponse, err := bulk.Do(elasticEntry.ctx)
 	if err != nil {
 		return nil,err

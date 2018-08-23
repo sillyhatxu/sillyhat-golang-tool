@@ -119,6 +119,17 @@ func (client *Client) Get(id string) (*elastic.GetResult, error) {
 	return elasticEntry.Get(id)
 }
 
+
+func (client *Client) MultiGet(idArray []string) (*elastic.MgetResponse, error) {
+	elasticEntry,err := client.newElastic()
+	if err != nil{
+		return nil,err
+	}
+	client.releaseEntry(elasticEntry)
+	return elasticEntry.MultiGet(idArray)
+}
+
+
 func (client *Client) Delete(id string) (int64, error) {
 	elasticEntry,err := client.newElastic()
 	if err != nil{
