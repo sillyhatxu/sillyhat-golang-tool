@@ -54,10 +54,11 @@ type BulkDoc interface {
 
 
 func NewElastic(client *Client) (*ElasticEntry,error) {
-	elasticClient, err := elastic.NewClient(
+		elasticClient, err := elastic.NewClient(
 		elastic.SetURL(client.URL),
 		elastic.SetSniff(false),
-		elastic.SetHealthcheckInterval(10*time.Second),
+		elastic.SetHealthcheckTimeout(30*time.Second),
+		elastic.SetHealthcheckInterval(30*time.Second),
 		elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),
 		elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
 	)
