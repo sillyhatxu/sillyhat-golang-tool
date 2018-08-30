@@ -147,6 +147,44 @@ func (mysqlClient *MySQLClient) QueryList(sql string) ([] map[string]interface{}
 	return results,nil
 }
 
+func (mysqlClient *MySQLClient) GetByPrimaryKey(sql string) (map[string]interface{},error) {
+	tx,err := mysqlClient.getConnection().Begin()
+	if err != nil {
+		return nil,err
+	}
+	defer tx.Commit()
+	rows,err := tx.Query(sql)
+	if err != nil {
+		return nil,err
+	}
+	defer rows.Close()
+	//读出查询出的列字段名
+	columns,err := rows.Columns()
+	if err != nil {
+		return nil,err
+	}
+	//values是每个列的值，这里获取到byte里
+	values := make([][]byte, len(columns))
+	//query.Scan的参数，因为每次查询出来的列是不定长的，用len(cols)定住当次查询的长度
+	scans := make([]interface{}, len(columns))
+	//让每一行数据都填充到[][]byte里面
+	for i := range values {
+		scans[i] = &values[i]
+	}
+	//最后得到的map
+	for rows.Next() { //循环，让游标往下推
+		if err := rows.Scan(scans...); err != nil { //query.Scan查询出来的不定长值放到scans[i] = &values[i],也就是每行都放在values里
+			return nil,err
+		}
+		row := make(map[string]interface{}) //每行数据
+		for k, v := range values { //每行数据是放在values里面，现在把它挪到row里
+			key := columns[k]
+			row[key] = string(v)
+		}
+		return row,nil
+	}
+	return nil,nil
+}
 
 //func (mysqlClient *MySQLClient) getReflectType(input interface{},column string) reflect.Type{
 //	inputType := reflect.TypeOf(input)
