@@ -1,14 +1,16 @@
 package sillyhat_elasticsearch
 
 import (
-	"sync"
-	"bytes"
+	logger "sillyhat-golang-tool/sillyhat_log/logrus"
 	"github.com/olivere/elastic"
+	"github.com/pkg/errors"
+	"sync"
+	"log"
+	"bytes"
 	"context"
 	"time"
 	"os"
-	"log"
-	"github.com/pkg/errors"
+
 )
 
 var bufferPool *sync.Pool
@@ -163,6 +165,9 @@ func (elasticEntry ElasticEntry) Bulk(bulkEntityArray []BulkEntity) (*elastic.Bu
 		return nil,err
 	}
 	for _,bulkEntity := range bulkEntityArray{
+		if bulkEntity.Id == "93250"{
+			logger.Info("ddddddd")
+		}
 		if checkExists(response.Docs,bulkEntity.Id){
 			if bulkEntity.IsDelete{
 				request := elastic.NewBulkDeleteRequest().Index(elasticEntry.elasticIndex).Type(elasticEntry.elasticType).Id(bulkEntity.Id)
