@@ -61,8 +61,7 @@ func TestClientGet(t *testing.T) {
 		WeaklyTypedInput: true,
 		Result:           &user,
 	}
-
-	decoder, err:= mapstructure. NewDecoder(config)
+	decoder, err := mapstructure. NewDecoder(config)
 	if err != nil {
 		panic(err)
 	}
