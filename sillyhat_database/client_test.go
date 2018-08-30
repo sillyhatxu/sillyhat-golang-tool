@@ -55,7 +55,7 @@ func TestClientGet(t *testing.T) {
 	defer client.Close()
 	result,err := client.GetByPrimaryKey("SELECT id,name,age,(is_delete = b'1') is_delete,created_date,last_modified_date FROM ocb_syncer.userinfo WHERE id = 10")
 	assert.Nil(t, err)
-	var user Userinfo
+	var user *Userinfo
 	config := &mapstructure.DecoderConfig{
 		DecodeHook:mapstructure.StringToTimeHookFunc("2006-01-02 15:04:05"),
 		WeaklyTypedInput: true,
