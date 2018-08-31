@@ -79,6 +79,8 @@ func TestClientQuery(t *testing.T) {
 	defer client.Close()
 	results,err := client.QueryList("SELECT id,name,age,(is_delete = b'1') is_delete,created_date,last_modified_date FROM ocb_syncer.userinfo")
 	assert.Nil(t, err)
+
+
 	var userArray [] Userinfo
 	for _,result := range results{
 		var user Userinfo

@@ -31,6 +31,7 @@ func NewClient(dataSourceName string) (*MySQLClient,error) {
 	//使用前 Ping, 确保 DB 连接正常
 	err = db.Ping()
 	if err != nil {
+		log.Error("Mysql client ping error.",err)
 		return nil,err
 	}
 	//mysqlClient.pool.SetConnMaxLifetime(time.Duration(connMaxLifetime) * time.Second)
@@ -52,13 +53,13 @@ func (mysqlClient *MySQLClient) getConnection() *sql.DB {
 func (mysqlClient *MySQLClient) Insert(sql string,args ...interface{}) (int64,error) {
 	stm,err := mysqlClient.getConnection().Prepare(sql)
 	if err != nil {
-		log.Println(err)
+		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
 	result,err := stm.Exec(args...)
 	stm.Close()
 	if err != nil {
-		log.Println(err)
+		log.Error("Inser data error.",err)
 		return 0,err
 	}
 	return result.LastInsertId()
@@ -68,11 +69,13 @@ func (mysqlClient *MySQLClient) Insert(sql string,args ...interface{}) (int64,er
 func (mysqlClient *MySQLClient) Update(sql string,args ...interface{}) (int64,error) {
 	stm,err := mysqlClient.getConnection().Prepare(sql)
 	if err != nil {
+		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
 	result,err := stm.Exec(args...)
 	stm.Close()
 	if err != nil {
+		log.Error("Update data error.",err)
 		return 0,err
 	}
 	return result.RowsAffected()
@@ -82,11 +85,13 @@ func (mysqlClient *MySQLClient) Update(sql string,args ...interface{}) (int64,er
 func (mysqlClient *MySQLClient) Delete(sql string,args ...interface{}) (int64,error) {
 	stm,err := mysqlClient.getConnection().Prepare(sql)
 	if err != nil {
+		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
 	result,err := stm.Exec(args...)
 	stm.Close()
 	if err != nil {
+		log.Error("Delete data error.",err)
 		return 0,err
 	}
 	return result.RowsAffected()
@@ -95,30 +100,51 @@ func (mysqlClient *MySQLClient) Delete(sql string,args ...interface{}) (int64,er
 func (mysqlClient *MySQLClient) DeleteByPrimaryKey(sql string,id int64) (int64,error) {
 	stm,err := mysqlClient.getConnection().Prepare(sql)
 	if err != nil {
+		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
 	result,err := stm.Exec(id)
 	stm.Close()
 	if err != nil {
+		log.Error("DeleteByPrimaryKey error.",err)
 		return 0,err
 	}
 	return result.RowsAffected()
 }
 
+func (mysqlClient *MySQLClient) Count(sql string) (int,error) {
+	tx,err := mysqlClient.getConnection().Begin()
+	if err != nil {
+		log.Error("Mysql client get connection error.",err)
+		return 0,err
+	}
+	defer tx.Commit()
+	var count int
+	countErr := tx.QueryRow(sql).Scan(&count)
+	if countErr != nil{
+		log.Error("Query count error.",err)
+		return 0,err
+	}
+	return count,nil
+}
+
 func (mysqlClient *MySQLClient) QueryList(sql string) ([] map[string]interface{},error) {
 	tx,err := mysqlClient.getConnection().Begin()
 	if err != nil {
+		log.Error("Mysql client get connection error.",err)
 		return nil,err
 	}
 	defer tx.Commit()
 	rows,err := tx.Query(sql)
 	if err != nil {
+		log.Error("Query error.",err)
 		return nil,err
 	}
 	defer rows.Close()
 	//读出查询出的列字段名
 	columns,err := rows.Columns()
 	if err != nil {
+		log.Error("rows.Columns() error.",err)
 		return nil,err
 	}
 	//values是每个列的值，这里获取到byte里
@@ -150,6 +176,7 @@ func (mysqlClient *MySQLClient) QueryList(sql string) ([] map[string]interface{}
 func (mysqlClient *MySQLClient) GetByPrimaryKey(sql string) (map[string]interface{},error) {
 	tx,err := mysqlClient.getConnection().Begin()
 	if err != nil {
+		log.Error("Mysql client get connection error.",err)
 		return nil,err
 	}
 	defer tx.Commit()
