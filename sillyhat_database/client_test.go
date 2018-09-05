@@ -6,6 +6,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"strconv"
 	"time"
+	"database/sql"
 )
 
 type Userinfo struct {
@@ -21,16 +22,32 @@ const dataSourceName = `deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southe
 
 func TestClientInsert(t *testing.T) {
 	client,err := NewClient(dataSourceName)
+	testSQL := "INSERT INTO userinfo (name, age,is_delete, created_date, last_modified_date) VALUES (?,?,?,now(),now())"
 	assert.Nil(t, err)
 	defer client.Close()
-	for i:=1001;i<=2000;i++{
-		id,err := client.Insert("INSERT INTO userinfo (name, age,is_delete, created_date, last_modified_date) VALUES (?,?,?,now(),now())","name-"+strconv.Itoa(i),25,i%2==0)
-		assert.Nil(t, err)
-		log.Println(id)
-	}
+	result,err := client.BatchInsert(func(tx *sql.Tx) (int, error) {
+		totalCount := 0
+		for i:=1001;i<=2000;i++{
+			_,err := tx.Exec(testSQL,"name-"+strconv.Itoa(i),25,i%2==0)
+			assert.Nil(t, err)
+			totalCount++
+		}
+		return totalCount,nil
+	})
+	assert.Nil(t, err)
+	log.Println(result)
 }
 
 func TestClientUpdate(t *testing.T) {
+	client,err := NewClient(dataSourceName)
+	assert.Nil(t, err)
+	defer client.Close()
+	count,err := client.Update("UPDATE ocb_syncer.userinfo SET name = ?, age = ?,last_modified_date = now() WHERE id = ?","xushikuan",29,5)
+	assert.Nil(t, err)
+	log.Println(count)
+}
+
+func TestClientBatchInsert(t *testing.T) {
 	client,err := NewClient(dataSourceName)
 	assert.Nil(t, err)
 	defer client.Close()

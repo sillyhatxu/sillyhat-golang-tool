@@ -56,14 +56,15 @@ func (mysqlClient *MySQLClient) Insert(sql string,args ...interface{}) (int64,er
 		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
+	defer stm.Close()
 	result,err := stm.Exec(args...)
-	stm.Close()
 	if err != nil {
-		log.Error("Inser data error.",err)
+		log.Error("Insert data error.",err)
 		return 0,err
 	}
 	return result.LastInsertId()
 }
+
 
 //return affected count
 func (mysqlClient *MySQLClient) Update(sql string,args ...interface{}) (int64,error) {
@@ -72,13 +73,54 @@ func (mysqlClient *MySQLClient) Update(sql string,args ...interface{}) (int64,er
 		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
+	defer stm.Close()
 	result,err := stm.Exec(args...)
-	stm.Close()
 	if err != nil {
 		log.Error("Update data error.",err)
 		return 0,err
 	}
 	return result.RowsAffected()
+}
+
+type BatchCallback func(*sql.Tx) (int,error)
+
+func (mysqlClient *MySQLClient) BatchInsert(callback BatchCallback) (int,error) {
+	tx,err := mysqlClient.getConnection().Begin()
+	if err != nil {
+		log.Error("Mysql client get transaction error.",err)
+		return 0,err
+	}
+	result,err := callback(tx)
+	if err != nil {
+		log.Error("Batch insert data error.",err)
+		return 0,err
+	}
+	//totalCount := 0
+	//for i := 13010;i<=14000;i++{
+	//	_,err := tx.Exec(sql,args...)
+	//	if err != nil {
+	//		log.Error("Inser data error.",err)
+	//		return 0,err
+	//	}
+	//	totalCount++
+	//}
+	defer tx.Commit()
+	return result,nil
+}
+
+func (mysqlClient *MySQLClient) BatchUpdate(callback BatchCallback) (int,error) {
+	tx,err := mysqlClient.getConnection().Begin()
+	if err != nil {
+		log.Error("Mysql client get transaction error.",err)
+		return 0,err
+	}
+	result,err := callback(tx)
+	if err != nil {
+		log.Error("Batch update data error.",err)
+		return 0,err
+	}
+	defer tx.Commit()
+	return result,nil
 }
 
 //return affected count
@@ -88,8 +130,8 @@ func (mysqlClient *MySQLClient) Delete(sql string,args ...interface{}) (int64,er
 		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
+	defer stm.Close()
 	result,err := stm.Exec(args...)
-	stm.Close()
 	if err != nil {
 		log.Error("Delete data error.",err)
 		return 0,err
@@ -103,8 +145,8 @@ func (mysqlClient *MySQLClient) DeleteByPrimaryKey(sql string,id int64) (int64,e
 		log.Error("Mysql client get connection error.",err)
 		return 0,err
 	}
+	defer stm.Close()
 	result,err := stm.Exec(id)
-	stm.Close()
 	if err != nil {
 		log.Error("DeleteByPrimaryKey error.",err)
 		return 0,err
