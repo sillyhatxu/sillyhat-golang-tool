@@ -51,11 +51,15 @@ func (self *GoroutinePool) Start() {
 
 	// 所有任务都执行完成，回调函数
 	if self.finishCallback != nil {
-		func(isFinish *bool) {
-			*isFinish = true
-		}(&self.IsFinish)
-		self.finishCallback()
+		self.finishCallback();
 	}
+
+	//if self.finishCallback != nil {
+	//	func(isFinish *bool) {
+	//		*isFinish = true
+	//	}(&self.IsFinish)
+	//	self.finishCallback()
+	//}
 }
 
 // thread stop
