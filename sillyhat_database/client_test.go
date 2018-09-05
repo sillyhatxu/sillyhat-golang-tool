@@ -53,7 +53,7 @@ func TestClientGet(t *testing.T) {
 	client,err := NewClient(dataSourceName)
 	assert.Nil(t, err)
 	defer client.Close()
-	result,err := client.GetByPrimaryKey("SELECT id,name,age,(is_delete = b'1') is_delete,created_date,last_modified_date FROM ocb_syncer.userinfo WHERE id = 10")
+	result,err := client.GetByPrimaryKey("SELECT id,name,age,(is_delete = b'1') is_delete,created_date,last_modified_date FROM ocb_syncer.userinfo WHERE id = 10 LIMIT 20")
 	assert.Nil(t, err)
 	var user *Userinfo
 	config := &mapstructure.DecoderConfig{
@@ -77,7 +77,7 @@ func TestClientQuery(t *testing.T) {
 	client,err := NewClient(dataSourceName)
 	assert.Nil(t, err)
 	defer client.Close()
-	results,err := client.QueryList("SELECT id,name,age,(is_delete = b'1') is_delete,created_date,last_modified_date FROM ocb_syncer.userinfo")
+	results,err := client.QueryList("SELECT id,name,age,(is_delete = b'1') is_delete,created_date,last_modified_date FROM ocb_syncer.userinfo LIMIT 20")
 	assert.Nil(t, err)
 	var userArray [] Userinfo
 	for _,result := range results{

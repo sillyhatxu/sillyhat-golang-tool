@@ -166,6 +166,8 @@ func (mysqlClient *MySQLClient) QueryList(sql string) ([] map[string]interface{}
 
 		for k, v := range values { //每行数据是放在values里面，现在把它挪到row里
 			key := columns[k]
+			//valueType := reflect.TypeOf(v)
+			//log.Info(valueType)
 			row[key] = string(v)
 		}
 		results = append(results,row)

@@ -67,6 +67,7 @@ func NewElastic(client *Client) (*ElasticEntry,error) {
 	if err != nil{
 		return nil,err
 	}
+
 	return &ElasticEntry{
 		ctx:client.CTX,
 		elasticClient:elasticClient,
