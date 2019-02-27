@@ -19,7 +19,7 @@ package database
 //	if err != nil{
 //		panic(err)
 //	}
-//	//db,_ = sql.Open("mysql", "deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southeast-1.rds.amazonaws.com:3306)/ocb_syncer")
+//	//db,_ = sql.Open("mysql", "database_username:database_password@tcp(127.0.0.1:3306)/ocb_syncer")
 //	connMaxLifetime := 10
 //	maxIdleConns := 10
 //	maxOpenConns := 50

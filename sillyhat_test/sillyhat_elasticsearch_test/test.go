@@ -1,13 +1,13 @@
 package main
 
 import (
-	elastic "sillyhat-golang-tool/sillyhat_elasticsearch"
-	"log"
 	"encoding/json"
-	"sillyhat-golang-tool/sillyhat_database"
-	"time"
-	"strconv"
 	"golang-cloud/tool/basic"
+	"log"
+	"sillyhat-golang-tool/sillyhat_database"
+	elastic "sillyhat-golang-tool/sillyhat_elasticsearch"
+	"strconv"
+	"time"
 )
 
 func init() {
@@ -47,16 +47,16 @@ func main() {
 }
 
 func get(id string) error {
-	getResult,err := elastic.Get(id)
-	if err != nil{
+	getResult, err := elastic.Get(id)
+	if err != nil {
 		log.Println(err.Error())
 		return err
 	}
 	log.Println(getResult)
 	if getResult.Found {
 		log.Printf("Got document id[%v] version [%v] index [%v] type [%v]\n", getResult.Id, getResult.Version, getResult.Index, getResult.Type)
-		resultJSON,err := getResult.Source.MarshalJSON()
-		if err != nil{
+		resultJSON, err := getResult.Source.MarshalJSON()
+		if err != nil {
 			log.Println(err.Error())
 			return err
 		}
@@ -68,210 +68,207 @@ func get(id string) error {
 }
 
 func delete(id string) error {
-	isDelete,err := elastic.Delete(id)
-	if err != nil{
+	isDelete, err := elastic.Delete(id)
+	if err != nil {
 		log.Println(err.Error())
 		return err
 	}
-	log.Printf("delete result [%v]",isDelete)
+	log.Printf("delete result [%v]", isDelete)
 	return nil
 }
 
 func deleteIndex() error {
-	isDelete,err := elastic.DeleteIndex()
-	if err != nil{
+	isDelete, err := elastic.DeleteIndex()
+	if err != nil {
 		log.Println(err.Error())
 		return err
 	}
-	log.Printf("delete result [%v]",isDelete)
+	log.Printf("delete result [%v]", isDelete)
 	return nil
 }
 
-func index()  {
+func index() {
 
 }
 
-func bulk()  {
-	dataSourceName := "deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southeast-1.rds.amazonaws.com:3306)/shopping_bag"
-	mysqlClient,err := sillyhat_database.NewClient(dataSourceName)
-	if err != nil{
+func bulk() {
+	dataSourceName := "database_username:database_password@tcp(127.0.0.1:3306)/shopping_bag"
+	mysqlClient, err := sillyhat_database.NewClient(dataSourceName)
+	if err != nil {
 		panic(err)
 	}
 	productArray := queryProductArray(mysqlClient)
-	log.Printf("productArray length : %v\n",len(productArray))
+	log.Printf("productArray length : %v\n", len(productArray))
 
 	var bulkEntityArray []elastic.BulkEntity
 	//var docArray []Product
 	//var idDeleteArray []string
-	for _,product := range productArray{
-		if !product.IsDelete && product.ValidateStatus{
-			if product.CurrentPrice < product.OriginalPrice{
+	for _, product := range productArray {
+		if !product.IsDelete && product.ValidateStatus {
+			if product.CurrentPrice < product.OriginalPrice {
 				product.IsDiscount = true
-			}else{
+			} else {
 				product.IsDiscount = false
 			}
-			if time.Now().Unix() - product.CreatedTime.Unix() <= 1209600{
+			if time.Now().Unix()-product.CreatedTime.Unix() <= 1209600 {
 				product.IsNewArrival = true
-			}else{
+			} else {
 				product.IsNewArrival = false
 			}
-			if product.Pattern != 0{
+			if product.Pattern != 0 {
 				product.ColorAndPattern = product.Pattern
-			}else{
+			} else {
 				product.ColorAndPattern = product.Color
 			}
 			product.AllSize = true
 			product.Weight = 10000
-			bulkEntityArray = append(bulkEntityArray,*&elastic.BulkEntity{Id:strconv.FormatInt(product.ProductId,10),Data:product,IsDelete:false})
-		}else{
-			bulkEntityArray = append(bulkEntityArray,*&elastic.BulkEntity{Id:strconv.FormatInt(product.ProductId,10),Data:product,IsDelete:true})
+			bulkEntityArray = append(bulkEntityArray, *&elastic.BulkEntity{Id: strconv.FormatInt(product.ProductId, 10), Data: product, IsDelete: false})
+		} else {
+			bulkEntityArray = append(bulkEntityArray, *&elastic.BulkEntity{Id: strconv.FormatInt(product.ProductId, 10), Data: product, IsDelete: true})
 		}
 	}
-	response,err := elastic.Bulk(bulkEntityArray)
-	if err != nil{
+	response, err := elastic.Bulk(bulkEntityArray)
+	if err != nil {
 		log.Fatal(err.Error())
 	}
 	log.Println(response)
 }
 
-func bulkAll()  {
-	dataSourceName := "deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southeast-1.rds.amazonaws.com:3306)/shopping_bag"
-	mysqlClient,err := sillyhat_database.NewClient(dataSourceName)
-	if err != nil{
+func bulkAll() {
+	dataSourceName := "database_username:database_password@tcp(127.0.0.1:3306)/shopping_bag"
+	mysqlClient, err := sillyhat_database.NewClient(dataSourceName)
+	if err != nil {
 		panic(err)
 	}
 	productArray := queryProductArray(mysqlClient)
-	log.Printf("productArray length : %v\n",len(productArray))
+	log.Printf("productArray length : %v\n", len(productArray))
 	var bulkEntityArray []elastic.BulkEntity
-	for _,product := range productArray{
-		if !product.IsDelete && product.ValidateStatus{
-			if product.CurrentPrice < product.OriginalPrice{
+	for _, product := range productArray {
+		if !product.IsDelete && product.ValidateStatus {
+			if product.CurrentPrice < product.OriginalPrice {
 				product.IsDiscount = true
-			}else{
+			} else {
 				product.IsDiscount = false
 			}
-			if time.Now().Unix() - product.CreatedTime.Unix() <= 1209600{
+			if time.Now().Unix()-product.CreatedTime.Unix() <= 1209600 {
 				product.IsNewArrival = true
-			}else{
+			} else {
 				product.IsNewArrival = false
 			}
-			if product.Pattern != 0{
+			if product.Pattern != 0 {
 				product.ColorAndPattern = product.Pattern
-			}else{
+			} else {
 				product.ColorAndPattern = product.Color
 			}
 			product.AllSize = true
 			product.Weight = 10000
-			bulkEntityArray = append(bulkEntityArray,*&elastic.BulkEntity{Id:strconv.FormatInt(product.ProductId,10),Data:product,IsDelete:false})
+			bulkEntityArray = append(bulkEntityArray, *&elastic.BulkEntity{Id: strconv.FormatInt(product.ProductId, 10), Data: product, IsDelete: false})
 		}
 	}
 
-	log.Println("bulkEntityArray length : ",len(bulkEntityArray))
+	log.Println("bulkEntityArray length : ", len(bulkEntityArray))
 
-	totalRecord := len(bulkEntityArray)//total record
-	totalPage := (totalRecord+page_count-1)/page_count;
-	for i := 0;i < totalPage;i++{
-		start := i*page_count
-		end := basic.MinInt((i+1)*page_count,totalRecord)
-		response,err := elastic.BulkAll(bulkEntityArray[start:end])
-		if err != nil{
+	totalRecord := len(bulkEntityArray) //total record
+	totalPage := (totalRecord + page_count - 1) / page_count
+	for i := 0; i < totalPage; i++ {
+		start := i * page_count
+		end := basic.MinInt((i+1)*page_count, totalRecord)
+		response, err := elastic.BulkAll(bulkEntityArray[start:end])
+		if err != nil {
 			log.Fatal(err.Error())
 		}
-		log.Println("success ",len(response.Succeeded()))
+		log.Println("success ", len(response.Succeeded()))
 	}
 
 }
 
-
-func bulkAllDetail()  {
-	dataSourceName := "deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southeast-1.rds.amazonaws.com:3306)/shop"
-	mysqlClient,err := sillyhat_database.NewClient(dataSourceName)
-	if err != nil{
+func bulkAllDetail() {
+	dataSourceName := "database_username:database_password@tcp(127.0.0.1:3306)/shop"
+	mysqlClient, err := sillyhat_database.NewClient(dataSourceName)
+	if err != nil {
 		panic(err)
 	}
 	productDetailArray := queryProductDetailArray(mysqlClient)
-	log.Printf("productDetailArray length : %v\n",len(productDetailArray))
+	log.Printf("productDetailArray length : %v\n", len(productDetailArray))
 	var bulkEntityArray []elastic.BulkEntity
-	for _,productDetail := range productDetailArray{
-		bulkEntityArray = append(bulkEntityArray,*&elastic.BulkEntity{Id:strconv.FormatInt(productDetail.ProductId,10),Data:productDetail,IsDelete:false})
+	for _, productDetail := range productDetailArray {
+		bulkEntityArray = append(bulkEntityArray, *&elastic.BulkEntity{Id: strconv.FormatInt(productDetail.ProductId, 10), Data: productDetail, IsDelete: false})
 	}
-	totalRecord := len(productDetailArray)//total record
-	totalPage := (totalRecord+page_count-1)/page_count;
-	for i := 0;i < totalPage;i++{
-		start := i*page_count
-		end := basic.MinInt((i+1)*page_count,totalRecord)
-		log.Printf("start : %v ; end : %v\n",start,end)
-		response,err := elastic.BulkAll(bulkEntityArray[start:end])
-		if err != nil{
+	totalRecord := len(productDetailArray) //total record
+	totalPage := (totalRecord + page_count - 1) / page_count
+	for i := 0; i < totalPage; i++ {
+		start := i * page_count
+		end := basic.MinInt((i+1)*page_count, totalRecord)
+		log.Printf("start : %v ; end : %v\n", start, end)
+		response, err := elastic.BulkAll(bulkEntityArray[start:end])
+		if err != nil {
 			log.Fatal(err.Error())
 		}
-		log.Println("success ",len(response.Succeeded()))
+		log.Println("success ", len(response.Succeeded()))
 	}
 }
 
-func bulkAllImage()  {
-	dataSourceName := "deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southeast-1.rds.amazonaws.com:3306)/shop"
-	mysqlClient,err := sillyhat_database.NewClient(dataSourceName)
-	if err != nil{
+func bulkAllImage() {
+	dataSourceName := "database_username:database_password@tcp(127.0.0.1:3306)/shop"
+	mysqlClient, err := sillyhat_database.NewClient(dataSourceName)
+	if err != nil {
 		panic(err)
 	}
 	productImageArray := queryProductImageArray(mysqlClient)
-	log.Printf("productImageArray length : %v\n",len(productImageArray))
+	log.Printf("productImageArray length : %v\n", len(productImageArray))
 	var bulkEntityArray []elastic.BulkEntity
-	for _,productImage := range productImageArray{
-		bulkEntityArray = append(bulkEntityArray,*&elastic.BulkEntity{Id:productImage.Id,Data:productImage,IsDelete:false})
+	for _, productImage := range productImageArray {
+		bulkEntityArray = append(bulkEntityArray, *&elastic.BulkEntity{Id: productImage.Id, Data: productImage, IsDelete: false})
 	}
-	totalRecord := len(productImageArray)//total record
-	totalPage := (totalRecord+page_count-1)/page_count;
-	for i := 0;i < totalPage;i++{
-		start := i*page_count
-		end := basic.MinInt((i+1)*page_count,totalRecord)
-		log.Printf("start : %v ; end : %v\n",start,end)
-		response,err := elastic.BulkAll(bulkEntityArray[start:end])
-		if err != nil{
+	totalRecord := len(productImageArray) //total record
+	totalPage := (totalRecord + page_count - 1) / page_count
+	for i := 0; i < totalPage; i++ {
+		start := i * page_count
+		end := basic.MinInt((i+1)*page_count, totalRecord)
+		log.Printf("start : %v ; end : %v\n", start, end)
+		response, err := elastic.BulkAll(bulkEntityArray[start:end])
+		if err != nil {
 			log.Fatal(err.Error())
 		}
-		log.Println("success ",len(response.Succeeded()))
+		log.Println("success ", len(response.Succeeded()))
 	}
 }
 
-func bulkAllInventory()  {
-	dataSourceName := "deja_cloud:deja_cloud@tcp(deja-dt.ccf2gesv8s9h.ap-southeast-1.rds.amazonaws.com:3306)/inventory"
-	mysqlClient,err := sillyhat_database.NewClient(dataSourceName)
-	if err != nil{
+func bulkAllInventory() {
+	dataSourceName := "database_username:database_password@tcp(127.0.0.1:3306)/inventory"
+	mysqlClient, err := sillyhat_database.NewClient(dataSourceName)
+	if err != nil {
 		panic(err)
 	}
 	productInventoryArray := queryProductInventoryArray(mysqlClient)
-	log.Printf("productInventoryArray length : %v\n",len(productInventoryArray))
+	log.Printf("productInventoryArray length : %v\n", len(productInventoryArray))
 	var bulkEntityArray []elastic.BulkEntity
-	for _,productInventory := range productInventoryArray{
-		bulkEntityArray = append(bulkEntityArray,*&elastic.BulkEntity{Id:strconv.FormatInt(productInventory.Id,10),Data:productInventory,IsDelete:false})
+	for _, productInventory := range productInventoryArray {
+		bulkEntityArray = append(bulkEntityArray, *&elastic.BulkEntity{Id: strconv.FormatInt(productInventory.Id, 10), Data: productInventory, IsDelete: false})
 	}
-	totalRecord := len(productInventoryArray)//total record
-	totalPage := (totalRecord+page_count-1)/page_count;
-	for i := 0;i < totalPage;i++{
-		start := i*page_count
-		end := basic.MinInt((i+1)*page_count,totalRecord)
-		log.Printf("start : %v ; end : %v\n",start,end)
-		response,err := elastic.BulkAll(bulkEntityArray[start:end])
-		if err != nil{
+	totalRecord := len(productInventoryArray) //total record
+	totalPage := (totalRecord + page_count - 1) / page_count
+	for i := 0; i < totalPage; i++ {
+		start := i * page_count
+		end := basic.MinInt((i+1)*page_count, totalRecord)
+		log.Printf("start : %v ; end : %v\n", start, end)
+		response, err := elastic.BulkAll(bulkEntityArray[start:end])
+		if err != nil {
 			log.Fatal(err.Error())
 		}
-		log.Println("success ",len(response.Succeeded()))
+		log.Println("success ", len(response.Succeeded()))
 	}
 }
 
-func indexExists()  {
-	exists,err := elastic.IndexExists()
-	if err != nil{
+func indexExists() {
+	exists, err := elastic.IndexExists()
+	if err != nil {
 		log.Println(err.Error())
 	}
 	log.Println(exists)
 }
 
-
-type Product struct{
-
+type Product struct {
 	ProductId int64 `json:"product_id"`
 
 	ProductCode string `json:"product_code"`
@@ -331,19 +328,16 @@ type Product struct{
 	UpdatedTime time.Time `json:"update_time"`
 
 	CreatedTime time.Time `json:"update_time"`
-
 }
 
-type ProductBulkDoc struct{
-
+type ProductBulkDoc struct {
 	elastic.BulkDoc
 
-	insertArray [] Product
+	insertArray []Product
 
-	updateArray [] Product
+	updateArray []Product
 
-	deleteArray [] string
-
+	deleteArray []string
 }
 
 func toInterface(i interface{}) interface{} {
@@ -352,30 +346,29 @@ func toInterface(i interface{}) interface{} {
 
 func (productBulkDoc *ProductBulkDoc) InsertArray() []interface{} {
 	var result []interface{}
-	for _,p := range productBulkDoc.insertArray{
-		result = append(result,p)
+	for _, p := range productBulkDoc.insertArray {
+		result = append(result, p)
 	}
 	return result
 }
 
 func (productBulkDoc *ProductBulkDoc) UpdateArray() []interface{} {
 	var result []interface{}
-	for _,p := range productBulkDoc.insertArray{
-		result = append(result,toInterface(p))
+	for _, p := range productBulkDoc.insertArray {
+		result = append(result, toInterface(p))
 	}
 	return result
 }
 
-func (productBulkDoc *ProductBulkDoc) DeleteArray() [] string {
-	var result [] string
-	for _,p := range productBulkDoc.insertArray{
-		result = append(result,strconv.FormatInt(p.ProductId,10))
+func (productBulkDoc *ProductBulkDoc) DeleteArray() []string {
+	var result []string
+	for _, p := range productBulkDoc.insertArray {
+		result = append(result, strconv.FormatInt(p.ProductId, 10))
 	}
 	return result
 }
 
-type ProductDetail struct{
-
+type ProductDetail struct {
 	ProductId int64 `json:"product_id"`
 
 	Description string `json:"description"`
@@ -387,8 +380,7 @@ type ProductDetail struct{
 	SizeGuideDescription string `json:"size_guide_description"`
 }
 
-type ProductImage struct{
-
+type ProductImage struct {
 	Id string `json:"id"`
 
 	ProductId int64 `json:"product_id"`
@@ -400,11 +392,9 @@ type ProductImage struct{
 	Width int `json:"width"`
 
 	IsDefault bool `json:"is_default"`
-
 }
 
-type ProductInventory struct{
-
+type ProductInventory struct {
 	Id int64 `json:"id"`
 
 	ProductId int64 `json:"product_id"`
@@ -414,31 +404,30 @@ type ProductInventory struct{
 	Quantity int `json:"quantity"`
 
 	AutoDeleted bool `json:"auto_deleted"`
-
 }
 
 func queryProductInventoryArray(mysqlClient *sillyhat_database.MySQLClient) []ProductInventory {
 	var resultArray []ProductInventory
 
-	tx,err := mysqlClient.GetConnection().Begin()
+	tx, err := mysqlClient.GetConnection().Begin()
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer tx.Commit()
-	rows,err := tx.Query(product_inventory_sql)
+	rows, err := tx.Query(product_inventory_sql)
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer rows.Close()
 
-	for rows.Next(){
+	for rows.Next() {
 		var productInventory = new(ProductInventory)
-		if err := rows.Scan(&productInventory.Id,&productInventory.AutoDeleted,&productInventory.Quantity,&productInventory.Size,&productInventory.ProductId); err != nil {
+		if err := rows.Scan(&productInventory.Id, &productInventory.AutoDeleted, &productInventory.Quantity, &productInventory.Size, &productInventory.ProductId); err != nil {
 			log.Fatal(err)
 		}
-		resultArray = append(resultArray,*productInventory)
+		resultArray = append(resultArray, *productInventory)
 	}
 	log.Println("query end")
 	return resultArray
@@ -447,25 +436,25 @@ func queryProductInventoryArray(mysqlClient *sillyhat_database.MySQLClient) []Pr
 func queryProductImageArray(mysqlClient *sillyhat_database.MySQLClient) []ProductImage {
 	var resultArray []ProductImage
 
-	tx,err := mysqlClient.GetConnection().Begin()
+	tx, err := mysqlClient.GetConnection().Begin()
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer tx.Commit()
-	rows,err := tx.Query(product_image_sql)
+	rows, err := tx.Query(product_image_sql)
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer rows.Close()
 
-	for rows.Next(){
+	for rows.Next() {
 		var productImage = new(ProductImage)
-		if err := rows.Scan(&productImage.Id,&productImage.ImageURL,&productImage.Height,&productImage.Width,&productImage.IsDefault,&productImage.ProductId); err != nil {
+		if err := rows.Scan(&productImage.Id, &productImage.ImageURL, &productImage.Height, &productImage.Width, &productImage.IsDefault, &productImage.ProductId); err != nil {
 			log.Fatal(err)
 		}
-		resultArray = append(resultArray,*productImage)
+		resultArray = append(resultArray, *productImage)
 	}
 	log.Println("query end")
 	return resultArray
@@ -474,25 +463,25 @@ func queryProductImageArray(mysqlClient *sillyhat_database.MySQLClient) []Produc
 func queryProductDetailArray(mysqlClient *sillyhat_database.MySQLClient) []ProductDetail {
 	var productDetailArray []ProductDetail
 
-	tx,err := mysqlClient.GetConnection().Begin()
+	tx, err := mysqlClient.GetConnection().Begin()
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer tx.Commit()
-	rows,err := tx.Query(product_detail_sql)
+	rows, err := tx.Query(product_detail_sql)
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer rows.Close()
 
-	for rows.Next(){
+	for rows.Next() {
 		var productDetail = new(ProductDetail)
-		if err := rows.Scan(&productDetail.ProductId,&productDetail.Description,&productDetail.DetailDescription,&productDetail.SizeGuideTable,&productDetail.SizeGuideDescription); err != nil {
+		if err := rows.Scan(&productDetail.ProductId, &productDetail.Description, &productDetail.DetailDescription, &productDetail.SizeGuideTable, &productDetail.SizeGuideDescription); err != nil {
 			log.Fatal(err)
 		}
-		productDetailArray = append(productDetailArray,*productDetail)
+		productDetailArray = append(productDetailArray, *productDetail)
 	}
 	log.Println("query end")
 	return productDetailArray
@@ -501,26 +490,26 @@ func queryProductDetailArray(mysqlClient *sillyhat_database.MySQLClient) []Produ
 func queryProductArray(mysqlClient *sillyhat_database.MySQLClient) []Product {
 	var productArray []Product
 
-	tx,err := mysqlClient.GetConnection().Begin()
+	tx, err := mysqlClient.GetConnection().Begin()
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer tx.Commit()
-	rows,err := tx.Query(product_sql)
+	rows, err := tx.Query(product_sql)
 	if err != nil {
 		log.Println(err.Error())
 		return nil
 	}
 	defer rows.Close()
 
-	for rows.Next(){
+	for rows.Next() {
 		var product = new(Product)
 		var udatedDBTime string
 		var createdDBTime string
-		if err := rows.Scan(&product.ProductId,&product.ProductCode,&product.ProductName,&product.Category,&product.ProductColor,&product.Currency,&product.CurrentPrice,
-				&product.OriginalPrice,&product.ProductGroupId,&product.BrandId,&product.BrandName,&product.IsPurchasable,&product.Width,
-					&product.Height,&product.ImageUrl,&product.Subcategory,&product.Color,&product.Pattern,&product.OCB,&product.IsDelete,&product.ValidateStatus,&udatedDBTime,&createdDBTime); err != nil {
+		if err := rows.Scan(&product.ProductId, &product.ProductCode, &product.ProductName, &product.Category, &product.ProductColor, &product.Currency, &product.CurrentPrice,
+			&product.OriginalPrice, &product.ProductGroupId, &product.BrandId, &product.BrandName, &product.IsPurchasable, &product.Width,
+			&product.Height, &product.ImageUrl, &product.Subcategory, &product.Color, &product.Pattern, &product.OCB, &product.IsDelete, &product.ValidateStatus, &udatedDBTime, &createdDBTime); err != nil {
 			log.Fatal(err)
 		}
 		DefaultTimeLoc := time.Local
@@ -537,7 +526,7 @@ func queryProductArray(mysqlClient *sillyhat_database.MySQLClient) []Product {
 		//log.Printf("today[%v]%v - createdTime[%v]%v",time.Now().Format("2006-01-02 15:04:05"),time.Now().Unix(),product.CreatedTime.Format("2006-01-02 15:04:05"),product.CreatedTime.Unix())
 		//resultJson,_ := json.Marshal(product)
 		//log.Println(string(resultJson))
-		productArray = append(productArray,*product)
+		productArray = append(productArray, *product)
 	}
 	log.Println("query end")
 	return productArray
@@ -602,4 +591,5 @@ FROM shop.product sit
   LEFT JOIN shop.shop s ON sit.brand_id = s.id
 ORDER BY sit.product_id
 `
+
 //WHERE sit.validate_status = TRUE AND sit.is_delete = FALSE AND sit.is_ocb = TRUE
